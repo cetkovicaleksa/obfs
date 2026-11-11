@@ -1,5 +1,5 @@
-from oram_bfs import hello
+from obfs import hello
 
 
 def test_hello_returns_greeting():
-    assert hello() == "Hello from oram-bfs!"
+    assert hello() == "Hello from obfs!"
