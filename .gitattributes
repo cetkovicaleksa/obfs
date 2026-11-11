@@ -1,0 +1,9 @@
+*   text=auto eol=lf
+
+.vscode/*.json      linguist-language=JSON-with-Comments
+.devcontainer.json  linguist-language=JSON-with-Comments
+devcontainer.json   linguist-language=JSON-with-Comments
+
+.gitattributes  export-ignore
+.gitignore      export-ignore
+.gitkeep        export-ignore
