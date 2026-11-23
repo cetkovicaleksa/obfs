@@ -8,9 +8,4 @@ __all__ = [
     "Edge",
     "GraphStats",
     "Vertex",
-    "hello",
 ]
-
-
-def hello() -> str:
-    return "Hello from obfs!"
