@@ -12,6 +12,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 def graphs_dir() -> Path:
     return FIXTURES_DIR / "graphs"
 
+
 @pytest.fixture
 def chain(graphs_dir: Path) -> Adjacency:
     adjacency, _ = load_graph(graphs_dir / "chain.txt", "facebook")
