@@ -1,11 +1,8 @@
-from pathlib import Path
-
 import networkx as nx
 import pytest
 
 from obfs import Adjacency, BfsResult
 from obfs.bfs_plain import bfs
-from obfs.graph_loader import load_graph
 
 
 def test_chain_from_vertex_2(chain: Adjacency) -> None:
