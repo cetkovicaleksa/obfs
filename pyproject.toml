@@ -9,6 +9,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "networkx>=3.7",
     "pytest>=8.0.0",
     "ruff>=0.14.0",
     "ty>=0.0.101",

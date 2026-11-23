@@ -1,5 +1,7 @@
 *   text=auto eol=lf
 
+*.csv   text eol=crlf
+
 .vscode/*.json      linguist-language=JSON-with-Comments
 .devcontainer.json  linguist-language=JSON-with-Comments
 devcontainer.json   linguist-language=JSON-with-Comments
