@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Алекса Ћетковић", email = "cetkovic.sv77.2022@uns.ac.rs" }]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "cryptography>=50.0.2",
+]
 
 [dependency-groups]
 dev = [

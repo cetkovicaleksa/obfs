@@ -44,3 +44,40 @@ class BfsResult:
     dist: dict[Vertex, int]
     order: list[Vertex]
     burst_lengths: list[Burst]
+
+
+# ID of a logical ORAM block. HEADER blocks use the vertex ID, SLOT and DUMMY
+# blocks follow them (Spec §2.8).
+type BlockId = int
+
+
+# Spec §2.7, HEADER: describes vertex_id and where its slots start.
+@dataclass(frozen=True)
+class Header:
+    vertex_id: Vertex
+    degree: int
+    first_slot_id: BlockId
+
+
+# Spec §2.7, SLOT: one directed record owner -> neighbor.
+@dataclass(frozen=True)
+class Slot:
+    owner_id: Vertex
+    neighbor_id: Vertex
+
+
+# Spec §2.7, DUMMY: only adds an access, carries nothing BFS uses.
+@dataclass(frozen=True)
+class Dummy:
+    pass
+
+
+# Content of a logical block, before it is encoded into a payload.
+type Record = Header | Slot | Dummy
+
+
+# One position in a bucket: a block ID and a fixed-size payload (Spec §4.4).
+@dataclass(frozen=True)
+class Block:
+    block_id: BlockId
+    payload: bytes

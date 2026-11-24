@@ -1,11 +1,31 @@
-from .domain import Adjacency, BfsResult, Burst, Dataset, Edge, GraphStats, Vertex
+from .domain import (
+    Adjacency,
+    BfsResult,
+    Block,
+    BlockId,
+    Burst,
+    Dataset,
+    Dummy,
+    Edge,
+    GraphStats,
+    Header,
+    Record,
+    Slot,
+    Vertex,
+)
 
 __all__ = [
     "Adjacency",
     "BfsResult",
+    "Block",
+    "BlockId",
     "Burst",
     "Dataset",
+    "Dummy",
     "Edge",
     "GraphStats",
+    "Header",
+    "Record",
+    "Slot",
     "Vertex",
 ]
