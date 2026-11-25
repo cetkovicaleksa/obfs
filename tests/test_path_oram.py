@@ -154,6 +154,22 @@ def test_stash_size_is_recorded_per_access() -> None:
     assert len(oram.stash_sizes) == 10
 
 
+def test_initialization_resets_server_log() -> None:
+    oram = PathORAM(make_blocks(16), random.Random(SEED))
+    assert oram.server.events == []
+
+
+def test_access_is_one_read_path_and_one_write_path() -> None:
+    # Spec §2.6: one logical access gives one read_path and one write_path of
+    # the same path, the one to the block's leaf before the access.
+    oram = PathORAM(make_blocks(16), random.Random(SEED))
+    for block_id in range(10):
+        path = tuple(path_to_leaf(oram.position_map[block_id], oram.num_leaves))
+        oram.server.events = []
+        oram.access("read", block_id)
+        assert oram.server.events == [("read_path", path), ("write_path", path)]
+
+
 def test_stash_overflow_is_reported() -> None:
     # Four blocks on leaf 0 with Z = 1: its path holds only three.
     with pytest.raises(StashOverflowError):
