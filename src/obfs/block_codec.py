@@ -1,7 +1,7 @@
 import struct
 from enum import IntEnum
 
-from .domain import Block, Dummy, Header, Record, Slot
+from .domain import Adjacency, Block, Dummy, Header, Record, Slot
 
 # Spec §4.4 and Appendix A.
 BLOCK_ID_BYTES = 8
@@ -12,6 +12,10 @@ POSITION_BYTES = BLOCK_ID_BYTES + PAYLOAD_BYTES
 # 8-byte ID is never reached by real blocks (|V| + 2|E| + D is far smaller).
 EMPTY_ID = 2 ** (8 * BLOCK_ID_BYTES) - 1
 EMPTY_BLOCK = Block(EMPTY_ID, bytes(PAYLOAD_BYTES))
+
+# Spec §4.11: first_slot_id of a vertex without neighbors. It is never a
+# real block ID.
+EMPTY_SLOT_SENTINEL = EMPTY_ID
 
 _BLOCK_ID = struct.Struct(">Q")
 # The first payload byte is the record type (Spec §2.7). Integer fields use
@@ -71,3 +75,33 @@ def deserialize_position(data: bytes) -> Block:
 def _check_payload(payload: bytes) -> None:
     if len(payload) != PAYLOAD_BYTES:
         raise ValueError(f"payload has {len(payload)} bytes, expected {PAYLOAD_BYTES}")
+
+
+# Spec §4.11, algorithm KODIRAJ_GRAF. Block IDs: headers 0..n-1, then the
+# slots of each vertex in adjacency order, then the dummy pool.
+def encode_graph(adjacency: Adjacency, dummy_pool_size: int) -> list[Block]:
+    if dummy_pool_size < 0:
+        raise ValueError(f"dummy pool size {dummy_pool_size} is negative")
+
+    # Spec §4.11, steps 1-3.
+    n = len(adjacency)
+    headers: list[Block] = []
+    slots: list[Block] = []
+    slot_cursor = n
+
+    # Spec §4.11, step 4.
+    for u, neighbors in enumerate(adjacency):
+        degree = len(neighbors)
+        first_slot_id = slot_cursor if degree > 0 else EMPTY_SLOT_SENTINEL
+        headers.append(Block(u, encode_record(Header(u, degree, first_slot_id))))
+        for v in neighbors:
+            slots.append(Block(slot_cursor, encode_record(Slot(u, v))))
+            slot_cursor += 1
+
+    # Spec §4.11, step 5. Every dummy has the same payload.
+    # https://www.youtube.com/watch?v=nAgSecmB9lM&t=13s
+    dummy = encode_record(Dummy())
+    dummies = [Block(slot_cursor + j, dummy) for j in range(dummy_pool_size)]
+
+    # Spec §4.11, step 6. The three lists are already in block_id order.
+    return headers + slots + dummies
