@@ -15,6 +15,10 @@ type Bucket = list[Block]
 
 type Operation = Literal["read", "write"]
 
+# What the server observes on each call: the kind of event and the bucket
+# indices of the path (Spec §2.6, §3.1).
+type PathEvent = tuple[Literal["read_path", "write_path"], tuple[int, ...]]
+
 
 class InvariantError(Exception):
     pass
@@ -38,15 +42,18 @@ def path_to_leaf(leaf: Leaf, num_leaves: int) -> list[int]:
 
 
 # Spec §4.5, ServerTree. The untrusted server: it stores encrypted bucket
-# records and sees which buckets are read and written.
+# records and logs which paths are read and written.
 class ServerTree:
     def __init__(self, records: list[bytes]) -> None:
         self.records = records
+        self.events: list[PathEvent] = []
 
     def read_path(self, path: list[int]) -> list[bytes]:
+        self.events.append(("read_path", tuple(path)))
         return [self.records[index] for index in path]
 
     def write_path(self, path: list[int], records: list[bytes]) -> None:
+        self.events.append(("write_path", tuple(path)))
         for index, record in zip(path, records, strict=True):
             self.records[index] = record
 
@@ -100,9 +107,11 @@ class PathORAM:
             self._read_path_into_stash(path)
             self._write_path(path)
 
-        # Spec §4.8, steps 4-5. Only the metrics are reset, the stash is kept.
+        # Spec §4.8, steps 4-5. Only the metrics and the server log are reset,
+        # the stash is kept.
         self.check_invariant()
         self.stash_sizes = []
+        self.server.events = []
 
     # Spec §4.9, algorithm ORAM_ACCESS.
     def access(
