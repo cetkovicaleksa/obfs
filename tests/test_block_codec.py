@@ -1,16 +1,21 @@
+import random
+
 import pytest
 
-from obfs import Block, Dummy, Header, Record, Slot
+from obfs import Adjacency, Block, Dummy, Header, Record, Slot
 from obfs.block_codec import (
     EMPTY_BLOCK,
     EMPTY_ID,
+    EMPTY_SLOT_SENTINEL,
     PAYLOAD_BYTES,
     POSITION_BYTES,
     decode_record,
     deserialize_position,
+    encode_graph,
     encode_record,
     serialize_position,
 )
+from obfs.path_oram import PathORAM
 
 # Spec §2.8: blocks of the graph 0-1, 0-2, plus one dummy.
 SPEC_2_8_BLOCKS: list[tuple[int, Record]] = [
@@ -71,3 +76,66 @@ def test_payload_of_wrong_size_is_rejected(size: int) -> None:
 def test_position_of_wrong_size_is_rejected() -> None:
     with pytest.raises(ValueError):
         deserialize_position(bytes(POSITION_BYTES - 1))
+
+
+# Spec §2.8 and Appendix A: the graph 0-1, 0-2 with a pool of 64 dummies.
+def test_encode_graph_matches_spec_example() -> None:
+    blocks = encode_graph([[1, 2], [0], [0]], dummy_pool_size=64)
+    assert [block.block_id for block in blocks] == list(range(71))
+    expected = dict(SPEC_2_8_BLOCKS[:7])
+    for block in blocks:
+        record = decode_record(block.payload)
+        assert record == expected.get(block.block_id, Dummy())
+
+
+@pytest.mark.parametrize("graph", ["chain", "star", "cycle"])
+def test_encode_graph_id_ranges(graph: str, request: pytest.FixtureRequest) -> None:
+    # Spec §2.7: N = |V| + 2|E| + D, headers first, then slots, then dummies.
+    adjacency: Adjacency = request.getfixturevalue(graph)
+    n = len(adjacency)
+    num_slots = sum(len(neighbors) for neighbors in adjacency)
+    blocks = encode_graph(adjacency, dummy_pool_size=8)
+    records = [decode_record(block.payload) for block in blocks]
+
+    assert [block.block_id for block in blocks] == list(range(n + num_slots + 8))
+    assert all(isinstance(record, Header) for record in records[:n])
+    assert all(isinstance(record, Slot) for record in records[n : n + num_slots])
+    assert all(isinstance(record, Dummy) for record in records[n + num_slots :])
+
+
+@pytest.mark.parametrize("graph", ["chain", "star", "cycle"])
+def test_header_points_to_its_slots(graph: str, request: pytest.FixtureRequest) -> None:
+    # Slot first_slot_id + i holds the i-th neighbor of the header's vertex
+    adjacency: Adjacency = request.getfixturevalue(graph)
+    records = [decode_record(block.payload) for block in encode_graph(adjacency, 0)]
+    for u, neighbors in enumerate(adjacency):
+        header = records[u]
+        assert isinstance(header, Header)
+        assert (header.vertex_id, header.degree) == (u, len(neighbors))
+        for i, v in enumerate(neighbors):
+            assert records[header.first_slot_id + i] == Slot(u, v)
+
+
+def test_vertex_without_neighbors_gets_sentinel() -> None:
+    blocks = encode_graph([[1], [0], []], dummy_pool_size=0)
+    assert decode_record(blocks[2].payload) == Header(2, 0, EMPTY_SLOT_SENTINEL)
+
+
+def test_negative_dummy_pool_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        encode_graph([[1], [0]], dummy_pool_size=-1)
+
+
+def test_encoded_graph_reads_back_through_path_oram(star: Adjacency) -> None:
+    oram = PathORAM(encode_graph(star, dummy_pool_size=4), random.Random(2027))
+    adjacency: Adjacency = []
+    for u in range(len(star)):
+        header = decode_record(oram.access("read", u))
+        assert isinstance(header, Header)
+        neighbors = []
+        for i in range(header.degree):
+            slot = decode_record(oram.access("read", header.first_slot_id + i))
+            assert isinstance(slot, Slot)
+            neighbors.append(slot.neighbor_id)
+        adjacency.append(neighbors)
+    assert adjacency == star
