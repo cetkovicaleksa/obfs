@@ -46,6 +46,29 @@ class BfsResult:
     burst_lengths: list[Burst]
 
 
+# Ordered burst sizes the server sees for one source (Spec §3.2).
+type Fingerprint = tuple[Burst, ...]
+
+# Fingerprint -> candidate sources that produce it (Spec §4.13).
+type FingerprintDatabase = dict[Fingerprint, list[Vertex]]
+
+
+@dataclass(frozen=True)
+class AttackResult:
+    # Spec §4.13, NAPADNI_UPIT output.
+    candidates: list[Vertex]
+    tie_size: int
+    top1_credit: float
+
+
+@dataclass(frozen=True)
+class AttackMetrics:
+    # Spec §4.13, IZRAČUNAJ_METRIKE_NAPADA output.
+    average_top1: float
+    average_tie_size: float
+    unique_share: float
+
+
 # ID of a logical ORAM block. HEADER blocks use the vertex ID, SLOT and DUMMY
 # blocks follow them (Spec §2.8).
 type BlockId = int

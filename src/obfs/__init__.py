@@ -1,5 +1,7 @@
 from .domain import (
     Adjacency,
+    AttackMetrics,
+    AttackResult,
     BfsResult,
     Block,
     BlockId,
@@ -7,6 +9,8 @@ from .domain import (
     Dataset,
     Dummy,
     Edge,
+    Fingerprint,
+    FingerprintDatabase,
     GraphStats,
     Header,
     Record,
@@ -16,6 +20,8 @@ from .domain import (
 
 __all__ = [
     "Adjacency",
+    "AttackMetrics",
+    "AttackResult",
     "BfsResult",
     "Block",
     "BlockId",
@@ -23,6 +29,8 @@ __all__ = [
     "Dataset",
     "Dummy",
     "Edge",
+    "Fingerprint",
+    "FingerprintDatabase",
     "GraphStats",
     "Header",
     "Record",
