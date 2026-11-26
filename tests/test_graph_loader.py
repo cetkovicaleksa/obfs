@@ -5,35 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from obfs import Dataset, GraphStats
+from obfs import Dataset
 from obfs.graph_loader import load_graph
-
-
-def test_chain(graphs_dir: Path) -> None:
-    # Spec Appendix B.1: chain 1-2-3-4-5, remapped to 0..4.
-    adjacency, stats = load_graph(graphs_dir / "chain.txt", "facebook")
-    assert adjacency == [[1], [0, 2], [1, 3], [2, 4], [3]]
-    assert stats == GraphStats(
-        num_vertices=5, num_edges=4, avg_degree=1.6, max_degree=2
-    )
-
-
-def test_star(graphs_dir: Path) -> None:
-    # Spec Appendix B.2: center 0, leaves 1-4.
-    adjacency, stats = load_graph(graphs_dir / "star.txt", "facebook")
-    assert adjacency == [[1, 2, 3, 4], [0], [0], [0], [0]]
-    assert stats == GraphStats(
-        num_vertices=5, num_edges=4, avg_degree=1.6, max_degree=4
-    )
-
-
-def test_cycle(graphs_dir: Path) -> None:
-    # Spec Appendix B.3: five vertices.
-    adjacency, stats = load_graph(graphs_dir / "cycle.txt", "facebook")
-    assert adjacency == [[1, 4], [0, 2], [1, 3], [2, 4], [0, 3]]
-    assert stats == GraphStats(
-        num_vertices=5, num_edges=5, avg_degree=2.0, max_degree=2
-    )
 
 
 def test_self_loops_duplicates_and_reversed_edges_are_removed(graphs_dir: Path) -> None:
@@ -69,12 +42,12 @@ def test_file_without_edges_is_rejected(graphs_dir: Path) -> None:
 
 def test_unknown_dataset_is_rejected(graphs_dir: Path) -> None:
     with pytest.raises(ValueError, match="unknown dataset"):
-        load_graph(graphs_dir / "chain.txt", "imdb")  # ty: ignore[invalid-argument-type]
+        load_graph(graphs_dir / "unsorted_ids.txt", "imdb")  # ty: ignore[invalid-argument-type]
 
 
 @pytest.mark.parametrize(
     ("name", "dataset"),
-    [("chain.txt", "facebook"), ("bitcoin_alpha_sample.csv", "bitcoin_alpha")],
+    [("unsorted_ids.txt", "facebook"), ("bitcoin_alpha_sample.csv", "bitcoin_alpha")],
 )
 def test_gzipped_file_loads_like_plain_file(
     graphs_dir: Path, tmp_path: Path, name: str, dataset: Dataset

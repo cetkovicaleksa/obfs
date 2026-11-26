@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from obfs import Adjacency
-from obfs.graph_loader import load_graph
+from obfs.datasets import example
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -14,18 +14,18 @@ def graphs_dir() -> Path:
 
 
 @pytest.fixture
-def chain(graphs_dir: Path) -> Adjacency:
-    adjacency, _ = load_graph(graphs_dir / "chain.txt", "facebook")
+def chain() -> Adjacency:
+    adjacency, _ = example("chain")
     return adjacency
 
 
 @pytest.fixture
-def star(graphs_dir: Path) -> Adjacency:
-    adjacency, _ = load_graph(graphs_dir / "star.txt", "facebook")
+def star() -> Adjacency:
+    adjacency, _ = example("star")
     return adjacency
 
 
 @pytest.fixture
-def cycle(graphs_dir: Path) -> Adjacency:
-    adjacency, _ = load_graph(graphs_dir / "cycle.txt", "facebook")
+def cycle() -> Adjacency:
+    adjacency, _ = example("cycle")
     return adjacency
