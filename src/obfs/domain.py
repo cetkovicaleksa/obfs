@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Self
+from typing import Self
 
 # Vertex ID. In a dataset file it is the original ID; after loading it is
 # remapped to 0..n-1 (Spec §4.2, step 5).
@@ -14,9 +14,6 @@ type Adjacency = list[list[Vertex]]
 # Number of logical accesses while BFS processes one vertex: one header read
 # plus one read per neighbor slot, 1 + deg(u) (Spec §2.1).
 type Burst = int
-
-# Datasets the loader can read (Spec §5.1).
-type Dataset = Literal["bitcoin_alpha", "facebook"]
 
 
 @dataclass(frozen=True)

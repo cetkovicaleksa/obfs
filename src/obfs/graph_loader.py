@@ -1,12 +1,16 @@
 import gzip
 import io
 from importlib.resources.abc import Traversable
+from typing import TYPE_CHECKING
 
-from .domain import Adjacency, Dataset, Edge, GraphStats, Vertex
+from .domain import Adjacency, Edge, GraphStats, Vertex
+
+if TYPE_CHECKING:
+    from .datasets import SnapGraph
 
 
 # Spec §4.2, algorithm UCITAJ_I_PRIPREMI_GRAF.
-def load_graph(path: Traversable, dataset: Dataset) -> tuple[Adjacency, GraphStats]:
+def load_graph(path: Traversable, dataset: "SnapGraph") -> tuple[Adjacency, GraphStats]:
     # Spec §4.2, steps 1-2. Normalizing to (min, max) makes duplicates and
     # reversed copies of the same undirected edge collapse in the set.
     edges: set[Edge] = set()
@@ -46,7 +50,7 @@ def load_graph(path: Traversable, dataset: Dataset) -> tuple[Adjacency, GraphSta
     return adjacency, GraphStats.from_adjacency(adjacency)
 
 
-def _parse_edge(line: str, dataset: Dataset) -> Edge:
+def _parse_edge(line: str, dataset: "SnapGraph") -> Edge:
     match dataset:
         case "bitcoin_alpha":
             # SOURCE,TARGET,RATING,TIME. Rating and time are ignored

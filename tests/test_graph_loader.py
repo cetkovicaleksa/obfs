@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from obfs import Dataset
+from obfs.datasets import SnapGraph
 from obfs.graph_loader import load_graph
 
 
@@ -50,7 +50,7 @@ def test_unknown_dataset_is_rejected(graphs_dir: Path) -> None:
     [("unsorted_ids.txt", "facebook"), ("bitcoin_alpha_sample.csv", "bitcoin_alpha")],
 )
 def test_gzipped_file_loads_like_plain_file(
-    graphs_dir: Path, tmp_path: Path, name: str, dataset: Dataset
+    graphs_dir: Path, tmp_path: Path, name: str, dataset: SnapGraph
 ) -> None:
     plain = graphs_dir / name
     gzipped = tmp_path / f"{name}.gz"

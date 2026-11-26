@@ -4,6 +4,9 @@ from .domain import Adjacency, GraphStats
 from .graph_loader import load_graph
 from .resources import GRAPHS
 
+# SNAP datasets the loader can read (Spec §5.1).
+type SnapGraph = Literal["bitcoin_alpha", "facebook"]
+
 # Example graphs shipped with the package (Spec Appendix B).
 type ExampleGraph = Literal["chain", "star", "cycle"]
 
