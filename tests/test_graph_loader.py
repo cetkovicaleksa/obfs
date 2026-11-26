@@ -1,8 +1,11 @@
+import gzip
+import shutil
+import zipfile
 from pathlib import Path
 
 import pytest
 
-from obfs import GraphStats
+from obfs import Dataset, GraphStats
 from obfs.graph_loader import load_graph
 
 
@@ -67,3 +70,32 @@ def test_file_without_edges_is_rejected(graphs_dir: Path) -> None:
 def test_unknown_dataset_is_rejected(graphs_dir: Path) -> None:
     with pytest.raises(ValueError, match="unknown dataset"):
         load_graph(graphs_dir / "chain.txt", "imdb")  # ty: ignore[invalid-argument-type]
+
+
+@pytest.mark.parametrize(
+    ("name", "dataset"),
+    [("chain.txt", "facebook"), ("bitcoin_alpha_sample.csv", "bitcoin_alpha")],
+)
+def test_gzipped_file_loads_like_plain_file(
+    graphs_dir: Path, tmp_path: Path, name: str, dataset: Dataset
+) -> None:
+    plain = graphs_dir / name
+    gzipped = tmp_path / f"{name}.gz"
+    with plain.open("rb") as source, gzip.open(gzipped, "wb") as target:
+        shutil.copyfileobj(source, target)
+    assert load_graph(gzipped, dataset) == load_graph(plain, dataset)
+
+
+@pytest.mark.parametrize("gzipped", [False, True])
+def test_file_inside_zip_archive_loads_like_plain_file(
+    graphs_dir: Path, tmp_path: Path, gzipped: bool
+) -> None:
+    # importlib.resources hands out such files when a package is zipped.
+    plain = graphs_dir / "unsorted_ids.txt"
+    data = plain.read_bytes()
+    name = "unsorted_ids.txt.gz" if gzipped else "unsorted_ids.txt"
+    archive = tmp_path / "graphs.zip"
+    with zipfile.ZipFile(archive, "w") as zip_file:
+        zip_file.writestr(name, gzip.compress(data) if gzipped else data)
+    inside = zipfile.Path(archive, name)
+    assert load_graph(inside, "facebook") == load_graph(plain, "facebook")

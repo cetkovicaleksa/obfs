@@ -1,15 +1,19 @@
-from pathlib import Path
+import gzip
+import io
+from importlib.resources.abc import Traversable
 
 from .domain import Adjacency, Dataset, Edge, GraphStats, Vertex
 
 
 # Spec §4.2, algorithm UCITAJ_I_PRIPREMI_GRAF.
-def load_graph(path: Path, dataset: Dataset) -> tuple[Adjacency, GraphStats]:
+def load_graph(path: Traversable, dataset: Dataset) -> tuple[Adjacency, GraphStats]:
     # Spec §4.2, steps 1-2. Normalizing to (min, max) makes duplicates and
     # reversed copies of the same undirected edge collapse in the set.
     edges: set[Edge] = set()
-    with path.open(encoding="utf-8") as file:
-        for line in file:
+    # SNAP distributes both datasets gzipped (Spec §5.1).
+    with path.open("rb") as raw:
+        data = gzip.GzipFile(fileobj=raw) if path.name.endswith(".gz") else raw
+        for line in io.TextIOWrapper(data, encoding="utf-8"):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
