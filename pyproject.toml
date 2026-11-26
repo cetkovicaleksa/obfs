@@ -9,8 +9,14 @@ dependencies = [
     "cryptography>=50.0.2",
 ]
 
+[project.optional-dependencies]
+datasets = [
+    "pooch>=1.9.0",
+]
+
 [dependency-groups]
 dev = [
+    "obfs[datasets]",
     "networkx>=3.7",
     "pytest>=8.0.0",
     "ruff>=0.14.0",
