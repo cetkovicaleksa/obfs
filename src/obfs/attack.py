@@ -1,3 +1,4 @@
+import random
 from collections import defaultdict
 from collections.abc import Sequence
 from statistics import fmean
@@ -61,3 +62,32 @@ def compute_attack_metrics(
     return AttackMetrics(
         average_top1, average_tie_size, unique_candidates / total_candidates
     )
+
+
+# Spec §5.2, step 2.
+DEGREE_GROUPS = 10
+
+
+# Spec §5.2, algorithm IZABERI_TESTNE_IZVORE.
+def select_test_sources(
+    adjacency: Adjacency, rng: random.Random, count: int = 100
+) -> list[Vertex]:
+    if not 0 <= count <= 100:
+        raise ValueError(f"count must be in 0..100, got {count}")
+
+    # Spec §5.2, step 1.
+    ranked = sorted(range(len(adjacency)), key=lambda v: (len(adjacency[v]), v))
+
+    # Spec §5.2, step 2.
+    n = len(ranked)
+    groups = [
+        ranked[i * n // DEGREE_GROUPS : (i + 1) * n // DEGREE_GROUPS]
+        for i in range(DEGREE_GROUPS)
+    ]
+
+    # Spec §5.2, steps 3-5. Up to count // 10 from each group, ten for the
+    # default 100; smaller groups give all their vertices.
+    per_group = count // DEGREE_GROUPS
+    return [
+        v for group in groups for v in rng.sample(group, min(per_group, len(group)))
+    ]
