@@ -3,8 +3,8 @@ from collections import Counter
 from collections.abc import Sequence
 from typing import Literal
 
-from .block_codec import EMPTY_BLOCK, EMPTY_ID, PAYLOAD_BYTES
-from .crypto import decrypt_bucket, encrypt_bucket, generate_key
+from .block_codec import EMPTY_BLOCK, EMPTY_ID, PAYLOAD_BYTES, POSITION_BYTES
+from .crypto import NONCE_BYTES, TAG_BYTES, decrypt_bucket, encrypt_bucket, generate_key
 from .domain import Block, BlockId
 
 # Leaf of the tree a block is assigned to, 0..num_leaves-1 (Spec §2.3).
@@ -26,6 +26,20 @@ class InvariantError(Exception):
 
 class StashOverflowError(Exception):
     pass
+
+
+# Spec §4.5: the smallest power of two >= N leaves, depth L.
+def _tree_shape(num_blocks: int) -> tuple[int, int]:
+    num_leaves = 1 << (num_blocks - 1).bit_length()
+    return num_leaves, num_leaves.bit_length() - 1
+
+
+# Spec §5.6, bytes_per_ORAM_access: the path read and written back, each
+# bucket record a nonce, Z serialized positions and a tag.
+def bytes_per_access(num_blocks: int, z: int = 4) -> int:
+    _, depth = _tree_shape(num_blocks)
+    bucket_record_bytes = NONCE_BYTES + z * POSITION_BYTES + TAG_BYTES
+    return 2 * (depth + 1) * bucket_record_bytes
 
 
 # Spec §4.6, function PUTANJA_DO_LISTA. Buckets are numbered in heap order:
@@ -82,9 +96,7 @@ class PathORAM:
         self.debug = debug
         self.key = generate_key()
 
-        # Spec §4.5: the smallest power of two >= N leaves, depth L.
-        self.num_leaves = 1 << (len(blocks) - 1).bit_length()
-        self.depth = self.num_leaves.bit_length() - 1
+        self.num_leaves, self.depth = _tree_shape(len(blocks))
 
         # Spec §4.8, steps 1-2.
         num_buckets = 2 * self.num_leaves - 1
