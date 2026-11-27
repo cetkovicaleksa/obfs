@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 from typing import Literal
 
@@ -14,6 +15,11 @@ type ExampleGraph = Literal["chain", "star", "cycle"]
 
 def example(name: ExampleGraph) -> tuple[Adjacency, GraphStats]:
     return load_graph(GRAPHS / f"{name}.txt", "facebook")
+
+
+chain = partial(example, "chain")
+star = partial(example, "star")
+cycle = partial(example, "cycle")
 
 
 SNAP_URL = "https://snap.stanford.edu/data"
@@ -44,3 +50,7 @@ def snap(dataset: SnapGraph) -> tuple[Adjacency, GraphStats]:
         path=pooch.os_cache("obfs"),
     )
     return load_graph(Path(path), dataset)
+
+
+bitcoin_alpha = partial(snap, "bitcoin_alpha")
+facebook = partial(snap, "facebook")
