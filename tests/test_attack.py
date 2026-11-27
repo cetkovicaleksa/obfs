@@ -4,7 +4,12 @@ from dataclasses import astuple
 import pytest
 
 from obfs import Adjacency, AttackMetrics, AttackResult
-from obfs.attack import attack_query, build_fingerprint_database, compute_attack_metrics
+from obfs.attack import (
+    attack_query,
+    build_fingerprint_database,
+    compute_attack_metrics,
+    select_test_sources,
+)
 from obfs.bfs_engines import mitigated_oram_bfs, naive_oram_bfs
 from obfs.bfs_plain import bfs
 from obfs.block_codec import encode_graph
@@ -129,3 +134,39 @@ def test_attack_on_engine_output(star: Adjacency) -> None:
     assert astuple(compute_attack_metrics(mitigated, mitigated_db)) == pytest.approx(
         (1 / len(star), len(star), 0.0)
     )
+
+
+@pytest.fixture
+def long_chain() -> Adjacency:
+    # 200 vertices: degree 1 at the ends, 2 elsewhere.
+    n = 200
+    return [[v for v in (u - 1, u + 1) if 0 <= v < n] for u in range(n)]
+
+
+def test_test_sources_are_ten_per_degree_group(long_chain: Adjacency) -> None:
+    # Spec §5.2: ranked by (degree, id) is 0, 199, 1, ..., 198, in ten
+    # groups of 20.
+    sources = select_test_sources(long_chain, random.Random(2027))
+    ranked = [0, 199, *range(1, 199)]
+    assert len(set(sources)) == 100
+    for i in range(10):
+        assert sum(1 for s in sources if s in ranked[20 * i : 20 * (i + 1)]) == 10
+
+
+def test_test_sources_follow_count(long_chain: Adjacency) -> None:
+    assert len(select_test_sources(long_chain, random.Random(1), count=20)) == 20
+
+
+def test_test_sources_are_reproducible(long_chain: Adjacency) -> None:
+    first = select_test_sources(long_chain, random.Random(2027))
+    assert select_test_sources(long_chain, random.Random(2027)) == first
+
+
+def test_small_graph_uses_every_vertex(chain: Adjacency) -> None:
+    # Spec §5.2, step 4: five vertices give five groups of one.
+    assert select_test_sources(chain, random.Random(0)) == [0, 4, 1, 2, 3]
+
+
+def test_more_than_100_sources_are_rejected(chain: Adjacency) -> None:
+    with pytest.raises(ValueError, match="0..100"):
+        select_test_sources(chain, random.Random(0), count=101)
